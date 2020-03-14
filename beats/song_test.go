@@ -1,4 +1,4 @@
-package song_test
+package beats_test
 
 import (
 	"log"
@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/cody-s-lee/beats/song"
+	"github.com/cody-s-lee/beats/beats"
+	"github.com/google/go-cmp/cmp"
 )
 
 // TestPlay verifies that a song plays by using the default song and verifying
 // it has a name, tempo and outputs appropriately when the clock advances
 func TestPlay(t *testing.T) {
-	song, err := song.Default()
+	song, err := beats.Default()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,50 +29,46 @@ func TestPlay(t *testing.T) {
 	}
 
 	clock := clock.NewMock()
-	out := make(chan string)
+	out := make(chan beats.Step)
 
 	go func() {
 		song.Play(clock, out)
 	}()
 
-	// Advance to just before first step, we are prepared for first step
-	advance(clock, song.StepDuration()/2)
-	step := 1
+	// Advance to just before first tick, we are prepared for first tick
+	advance(clock, song.TickDuration()/2)
 
+	tick := 0
 	// For each beat in the song
 	for i := 0; i < len(song.Beats); i++ {
 		// Advance until ready for that beat
-		for ; step < song.Beats[i].Step; step++ {
-			advance(clock, song.StepDuration())
-		}
 
-		// Verify that nothing's waiting on the output channel
-		l, ok := read(out)
-		if ok {
-			t.Fatalf("Output channel should be empty but got %s\n", l)
+		for ; tick < song.Beats[i].Tick; tick++ {
+			// Verify that nothing's waiting on the output channel
+			step, ok := read(out)
+			if !ok {
+				t.Fatal("Output channel should be open")
+			} else if !cmp.Equal(step.Beat, beats.Beat{}) {
+				t.Fatalf("Output channel should be empty but got %s\n", step.Beat)
+			}
+			advance(clock, song.TickDuration())
 		}
-
-		// Advance to the next step
-		advance(clock, song.StepDuration())
-		step++
 
 		// Verify there's a beat on the output channel
-		l, ok = read(out)
-		if ok {
-			t.Log(l)
-		} else {
-			t.Fatal("Output channel should be populated")
+		step, ok := read(out)
+		if !ok {
+			t.Fatal("Output channel should be open")
+		} else if cmp.Equal(step.Beat, beats.Beat{}) {
+			t.Fatalf("Output channel should be non-empty but got %d, %s\n", step.Tick, step.Beat)
 		}
+		advance(clock, song.TickDuration())
+		tick++
 	}
 
-	// Advance past the last step
-	advance(clock, song.StepDuration())
-	step++
-
-	// Verify that nothing's waiting on the output channel
-	l, ok := read(out)
+	// Verify that the output channel has closed
+	step, ok := read(out)
 	if ok {
-		t.Fatalf("Output channel should be empty but got %s\n", l)
+		t.Fatalf("Output channel should be empty but got %s\n", step.Beat)
 	}
 }
 
@@ -82,33 +79,33 @@ func TestParseNonJson(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
 }
 
-// TestParseDuplicateStep verifies we fail to parse when we have duplicate step value
-func TestParseDuplicateStep(t *testing.T) {
-	reader, err := os.Open("testdata/duplicate-step.json")
+// TestParseDuplicateTick verifies we fail to parse when we have duplicate tick value
+func TestParseDuplicateTick(t *testing.T) {
+	reader, err := os.Open("testdata/duplicate-tick.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
 }
 
-//TestParseNegativeStep verifies we fail to parse when we have a negative step value
-func TestParseNegativeStep(t *testing.T) {
-	reader, err := os.Open("testdata/negative-step.json")
+//TestParseNegativeTick verifies we fail to parse when we have a negative tick value
+func TestParseNegativeTick(t *testing.T) {
+	reader, err := os.Open("testdata/negative-tick.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -121,7 +118,7 @@ func TestParseEmptyName(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -134,7 +131,7 @@ func TestParseNegativeTempo(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -147,7 +144,7 @@ func TestParseNoName(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -160,7 +157,7 @@ func TestParseNoTempo(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -173,7 +170,7 @@ func TestParseZeroTempo(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, err = song.Parse(reader)
+	_, err = beats.Parse(reader)
 	if err == nil {
 		t.Fatal("Expected an error")
 	}
@@ -186,23 +183,23 @@ func TestParseAllNotes(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	song, err := song.Parse(reader)
+	song, err := beats.Parse(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	clock := clock.NewMock()
-	out := make(chan string)
+	out := make(chan beats.Step)
 
 	go func() {
 		song.Play(clock, out)
 	}()
 
 	for {
-		advance(clock, song.StepDuration())
+		advance(clock, song.TickDuration())
 		select {
-		case l, ok := <-out:
-			t.Log(l)
+		case step, ok := <-out:
+			t.Log(step)
 			if !ok {
 				return
 			}
@@ -218,7 +215,7 @@ func TestParse(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	song, err := song.Parse(reader)
+	song, err := beats.Parse(reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,11 +241,11 @@ func advance(clock *clock.Mock, duration time.Duration) {
 }
 
 // read reads off the output channel in a non-blocking manner
-func read(out chan string) (string, bool) {
+func read(out chan beats.Step) (beats.Step, bool) {
 	select {
-	case l, ok := <-out:
-		return l, ok
+	case step, ok := <-out:
+		return step, ok
 	default:
-		return "", false
+		return beats.Step{}, true
 	}
 }

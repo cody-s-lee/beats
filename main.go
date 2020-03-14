@@ -7,15 +7,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/cody-s-lee/beats/song"
-
 	"github.com/benbjohnson/clock"
+	"github.com/cody-s-lee/beats/beats"
 )
 
 func main() {
 	args := os.Args[1:]
 
-	var song song.Song
+	var song beats.Song
 	if len(args) > 0 {
 		fn := args[0]
 		reader, err := os.Open(fn)
@@ -39,25 +38,25 @@ func main() {
 	fmt.Printf("Tempo: %d bpm\n", song.Tempo)
 
 	clock := clock.New()
-	out := make(chan string)
+	out := make(chan beats.Step)
 
 	go song.Play(clock, out)
 
-	for l := range out {
-		fmt.Printf("%s\n", l)
+	for s := range out {
+		fmt.Printf("%d: %s\n", s.Tick, s.Beat)
 	}
 }
 
-func getSong(reader io.Reader) song.Song {
-	song, err := song.Parse(reader)
+func getSong(reader io.Reader) beats.Song {
+	song, err := beats.Parse(reader)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return *song
 }
 
-func getDefaultSong() song.Song {
-	song, err := song.Default()
+func getDefaultSong() beats.Song {
+	song, err := beats.Default()
 	if err != nil {
 		log.Fatal(err)
 	}

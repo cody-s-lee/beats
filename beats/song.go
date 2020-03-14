@@ -1,9 +1,8 @@
-package song
+package beats
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -12,7 +11,7 @@ import (
 )
 
 // Song is a whole song including its name, tempo and all the beats. The beats
-// array is sparse; each beat covers its own step in the rhythm. Beats must be
+// array is sparse; each beat covers its own tick in the rhythm. Beats must be
 // sorted.
 type Song struct {
 	Name  string `json:"name,omitempty"`
@@ -21,10 +20,10 @@ type Song struct {
 }
 
 // NewSong creates a song while ensuring that the beats of the song are validly
-// numbered. Step numbers must be greater than 0 and may not repeat.
+// numbered. Tick numbers must be greater than 0 and may not repeat.
 func NewSong(name string, tempo int, beats []Beat) (*Song, error) {
 	// Sort the beats in case we were passed bad data
-	sort.Sort(ByStep(beats))
+	sort.Sort(ByTick(beats))
 
 	// Validate non-empty name
 	if name == "" {
@@ -41,20 +40,20 @@ func NewSong(name string, tempo int, beats []Beat) (*Song, error) {
 	// Validators should be separated and processed independently unless the
 	// performance penalty requires corrective action.
 
-	// Validate no non-positive step numbers
+	// Validate no non-positive tick numbers
 	for i := 0; i < len(beats); i++ {
-		if beats[i].Step <= 0 {
-			return nil, errors.New("Step number for beat must be greater than 0")
+		if beats[i].Tick <= 0 {
+			return nil, errors.New("Tick number for beat must be greater than 0")
 		}
 	}
 
-	// Validate that no step number repeats among the beats
-	step := 0
+	// Validate that no tick number repeats among the beats
+	tick := 0
 	for i := 0; i < len(beats); i++ {
-		if beats[i].Step == step {
-			return nil, errors.New("Step number for beat may not repeat")
+		if beats[i].Tick == tick {
+			return nil, errors.New("Tick number for beat may not repeat")
 		}
-		step = beats[i].Step
+		tick = beats[i].Tick
 	}
 
 	return &Song{
@@ -83,55 +82,61 @@ func Default() (*Song, error) {
 		128,
 		[]Beat{
 			Beat{
-				Step:     1,
+				Tick:     1,
 				BassDrum: bdOne,
 			},
 			Beat{
-				Step:  3,
+				Tick:  3,
 				HiHat: closed,
 			},
 			Beat{
-				Step:      5,
+				Tick:      5,
 				SnareDrum: sdOne,
 				BassDrum:  bdOne,
 			},
 			Beat{
-				Step:  7,
+				Tick:  7,
 				HiHat: closed,
 			},
 			Beat{
-				Step:     9,
+				Tick:     9,
 				BassDrum: bdOne,
 			},
 			Beat{
-				Step:  11,
+				Tick:  11,
 				HiHat: closed,
 			},
 			Beat{
-				Step:      13,
+				Tick:      13,
 				SnareDrum: sdOne,
 				BassDrum:  bdOne,
 			},
 			Beat{
-				Step:  15,
+				Tick:  15,
 				HiHat: closed,
 			},
 		},
 	)
 }
 
+// Step is one step of the sequence at a given tick
+type Step struct {
+	Tick int
+	Beat Beat
+}
+
 // Play plays a song. The clock parameter allows you to use a specific clock
 // such as a mock clock for testing.
-func (song Song) Play(clock clock.Clock, out chan string) {
-	// Time between steps in the sequence
-	d := song.StepDuration()
+func (song Song) Play(clock clock.Clock, out chan Step) {
+	// Time between ticks in the sequence
+	d := song.TickDuration()
 
 	// Make sure the beats are sorted
 	beats := song.Beats
-	sort.Sort(ByStep(beats))
+	sort.Sort(ByTick(beats))
 
 	// Play each beat on a ticker
-	step := 0
+	tick := 0
 	i := 0
 	ticker := clock.Ticker(d)
 	for {
@@ -139,18 +144,20 @@ func (song Song) Play(clock clock.Clock, out chan string) {
 			break
 		}
 
-		if song.Beats[i].Step == step {
-			out <- fmt.Sprintf("%d: %s", step, song.Beats[i])
+		if song.Beats[i].Tick == tick {
+			out <- Step{tick, song.Beats[i]}
 			i++
+		} else {
+			out <- Step{tick, Beat{}}
 		}
 
 		<-ticker.C
-		step++
+		tick++
 	}
 	close(out)
 }
 
-// StepDuration gives the amount of time between steps
-func (song Song) StepDuration() time.Duration {
+// TickDuration gives the amount of time between ticks
+func (song Song) TickDuration() time.Duration {
 	return time.Minute / time.Duration(song.Tempo)
 }

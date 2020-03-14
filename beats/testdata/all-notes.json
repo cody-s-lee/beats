@@ -3,59 +3,59 @@
     "tempo": 188,
     "beats": [
       {
-        "step": 1,
+        "tick": 1,
         "bd": 1
       },
       {
-        "step": 2,
+        "tick": 2,
         "sd": 1
       },
       {
-        "step": 3,
+        "tick": 3,
         "lt": 1
       },
       {
-        "step": 4,
+        "tick": 4,
         "mt": 1
       },
       {
-        "step": 5,
+        "tick": 5,
         "ht": 1
       },
       {
-        "step": 6,
+        "tick": 6,
         "rc": 1
       },
       {
-        "step": 7,
+        "tick": 7,
         "rc": 2
       },
       {
-        "step": 8,
+        "tick": 8,
         "hc": 1
       },
       {
-        "step": 9,
+        "tick": 9,
         "hc": 2
       },
       {
-        "step": 10,
+        "tick": 10,
         "hh": 1
       },
       {
-        "step": 11,
+        "tick": 11,
         "hh": 2
       },
       {
-        "step": 12,
+        "tick": 12,
         "cy": 1
       },
       {
-        "step": 13,
+        "tick": 13,
         "cy": 2
       },
       {
-        "step": 14,
+        "tick": 14,
         "ac": 1
       }
     ]

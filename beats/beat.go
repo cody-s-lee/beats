@@ -1,4 +1,4 @@
-package song
+package beats
 
 import "fmt"
 
@@ -72,10 +72,10 @@ const (
 	acOn
 )
 
-// Beat is all the sounds happening at a single step of the rhythm
-// Step is what step of the song pattern this beat is for
+// Beat is all the sounds happening at a single tick of the rhythm
+// Tick is what tick of the song pattern this beat is for
 type Beat struct {
-	Step               int                `json:"step,omitempty"`
+	Tick               int                `json:"tick,omitempty"`
 	BassDrum           Bass               `json:"bd,omitempty"`
 	SnareDrum          Snare              `json:"sd,omitempty"`
 	LowTom             Tom                `json:"lt,omitempty"`
@@ -89,7 +89,7 @@ type Beat struct {
 }
 
 func (b Beat) String() string {
-	header := fmt.Sprintf("Beat{ Step: %d", b.Step)
+	header := fmt.Sprintf("Beat{ Tick: %d", b.Tick)
 
 	inner := ""
 	if b.BassDrum != bdNone {
@@ -138,9 +138,9 @@ func (b Beat) String() string {
 	return fmt.Sprintf("%s%s }", header, inner)
 }
 
-// ByStep implements sort.Interface for []Beat based on the Step field.
-type ByStep []Beat
+// ByTick implements sort.Interface for []Beat based on the Tick field.
+type ByTick []Beat
 
-func (s ByStep) Len() int           { return len(s) }
-func (s ByStep) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s ByStep) Less(i, j int) bool { return s[i].Step < s[j].Step }
+func (s ByTick) Len() int           { return len(s) }
+func (s ByTick) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByTick) Less(i, j int) bool { return s[i].Tick < s[j].Tick }
