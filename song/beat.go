@@ -75,17 +75,17 @@ const (
 // Beat is all the sounds happening at a single step of the rhythm
 // Step is what step of the song pattern this beat is for
 type Beat struct {
-	Step               int
-	BassDrum           Bass
-	SnareDrum          Snare
-	LowTom             Tom
-	MidTom             Tom
-	HiTom              Tom
-	RimshotCowbell     RimshotCowbell
-	HandClapTambourine HandClapTambourine
-	HiHat              HiHat
-	Cymbal             Cymbal
-	Accent             Accent
+	Step               int                `json:"step,omitempty"`
+	BassDrum           Bass               `json:"bd,omitempty"`
+	SnareDrum          Snare              `json:"sd,omitempty"`
+	LowTom             Tom                `json:"lt,omitempty"`
+	MidTom             Tom                `json:"mt,omitempty"`
+	HiTom              Tom                `json:"ht,omitempty"`
+	RimshotCowbell     RimshotCowbell     `json:"rc,omitempty"`
+	HandClapTambourine HandClapTambourine `json:"hc,omitempty"`
+	HiHat              HiHat              `json:"hh,omitempty"`
+	Cymbal             Cymbal             `json:"cy,omitempty"`
+	Accent             Accent             `json:"ac,omitempty"`
 }
 
 func (b Beat) String() string {

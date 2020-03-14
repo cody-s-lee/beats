@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"sort"
 	"time"
 
@@ -16,9 +15,9 @@ import (
 // array is sparse; each beat covers its own step in the rhythm. Beats must be
 // sorted.
 type Song struct {
-	Name  string
-	Tempo int
-	Beats []Beat
+	Name  string `json:"name,omitempty"`
+	Tempo int    `json:"tempo,omitempty"`
+	Beats []Beat `json:"beats"`
 }
 
 // NewSong creates a song while ensuring that the beats of the song are validly
@@ -55,6 +54,7 @@ func NewSong(name string, tempo int, beats []Beat) (*Song, error) {
 		if beats[i].Step == step {
 			return nil, errors.New("Step number for beat may not repeat")
 		}
+		step = beats[i].Step
 	}
 
 	return &Song{
@@ -66,18 +66,13 @@ func NewSong(name string, tempo int, beats []Beat) (*Song, error) {
 
 // Parse parses a song from a Reader
 func Parse(reader io.Reader) (*Song, error) {
-	bytes, err := ioutil.ReadAll(reader)
+	var song Song
+	err := json.NewDecoder(reader).Decode(&song)
 	if err != nil {
 		return nil, err
 	}
 
-	var song *Song
-	err = json.Unmarshal(bytes, song)
-	if err != nil {
-		return nil, err
-	}
-
-	return song, nil
+	return NewSong(song.Name, song.Tempo, song.Beats)
 }
 
 // Default constructs a default song. The default is a simple four on the floor

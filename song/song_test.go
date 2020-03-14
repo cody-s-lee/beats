@@ -1,6 +1,8 @@
 package song_test
 
 import (
+	"log"
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -9,10 +11,12 @@ import (
 	"github.com/cody-s-lee/beats/song"
 )
 
+// TestPlay verifies that a song plays by using the default song and verifying
+// it has a name, tempo and outputs appropriately when the clock advances
 func TestPlay(t *testing.T) {
 	song, err := song.Default()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if song.Name == "" {
@@ -67,7 +71,168 @@ func TestPlay(t *testing.T) {
 	// Verify that nothing's waiting on the output channel
 	l, ok := read(out)
 	if ok {
-		t.Errorf("Output channel should be empty but got %s\n", l)
+		t.Fatalf("Output channel should be empty but got %s\n", l)
+	}
+}
+
+// TestParseNonJson verifies we fail to parse a non-json file
+func TestParseNonJson(t *testing.T) {
+	reader, err := os.Open("testdata/non.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseDuplicateStep verifies we fail to parse when we have duplicate step value
+func TestParseDuplicateStep(t *testing.T) {
+	reader, err := os.Open("testdata/duplicate-step.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+//TestParseNegativeStep verifies we fail to parse when we have a negative step value
+func TestParseNegativeStep(t *testing.T) {
+	reader, err := os.Open("testdata/negative-step.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseEmptyName verifies we fail to parse when we have an empty song name
+func TestParseEmptyName(t *testing.T) {
+	reader, err := os.Open("testdata/empty-name.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseNegativeTempo verifies we fail to parse when we have a negative tempo
+func TestParseNegativeTempo(t *testing.T) {
+	reader, err := os.Open("testdata/negative-tempo.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseNoName verifies we fail to parse when we have no song name
+func TestParseNoName(t *testing.T) {
+	reader, err := os.Open("testdata/no-name.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseNoTempo verifies we fail to parse when the song has no tempo
+func TestParseNoTempo(t *testing.T) {
+	reader, err := os.Open("testdata/no-tempo.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseZeroTempo verifies we fail to parse when the song has a zero tempo
+func TestParseZeroTempo(t *testing.T) {
+	reader, err := os.Open("testdata/zero-tempo.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = song.Parse(reader)
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+}
+
+// TestParseAllNotes verifies we can read all valid notes
+func TestParseAllNotes(t *testing.T) {
+	reader, err := os.Open("testdata/all-notes.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	song, err := song.Parse(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clock := clock.NewMock()
+	out := make(chan string)
+
+	go func() {
+		song.Play(clock, out)
+	}()
+
+	for {
+		advance(clock, song.StepDuration())
+		select {
+		case l, ok := <-out:
+			t.Log(l)
+			if !ok {
+				return
+			}
+		default:
+		}
+	}
+}
+
+// TestParse verifies a well-formatted file parses
+func TestParse(t *testing.T) {
+	reader, err := os.Open("testdata/cowbell.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	song, err := song.Parse(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if song.Name != "Fast Cowbell" {
+		t.Errorf("Expected song name Fast Cowbell but got %s", song.Name)
+	}
+
+	if song.Tempo != 188 {
+		t.Errorf("Expected tempo of 188 but got %d", song.Tempo)
+	}
+
+	if len(song.Beats) != 10 {
+		t.Errorf("Expected to find 10 beats but got %d", len(song.Beats))
 	}
 }
 
