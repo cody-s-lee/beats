@@ -8,7 +8,7 @@ beats has a default mode and two subcommands, *play* and *create*. Please build 
 
 Tests run via `go test ./...` and cover the `song.go` and `beat.go` classes. `creator.go` is not covered for reasons later discussed.
 
-> Note: All development and testing was done on Windows. Viability on OSX and Linux are unknown.
+> Note: All development and testing was done on Windows. Viability on OSX and Linux is unknown.
 
 ## Default
 
