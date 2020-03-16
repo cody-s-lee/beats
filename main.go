@@ -1,80 +1,80 @@
 package main
 
 import (
-    "fmt"
-    "io"
-    "log"
-    "os"
+	"fmt"
+	"io"
+	"log"
+	"os"
 
-    "github.com/benbjohnson/clock"
-    "github.com/cody-s-lee/beats/beats"
+	"github.com/benbjohnson/clock"
+	"github.com/cody-s-lee/beats/beats"
 )
 
 func main() {
-    args := os.Args[1:]
+	args := os.Args[1:]
 
-    // No arguments given: play default song and quit gracefully
-    if len(args) == 0 {
-        song := getDefaultSong()
-        play(song)
-        os.Exit(0)
-    }
+	// No arguments given: play default song and quit gracefully
+	if len(args) == 0 {
+		song := getDefaultSong()
+		play(song)
+		os.Exit(0)
+	}
 
-    switch args[0] {
-    case "play":
-        // Not enough args for play, show help and quit
-        if len(args) < 2 {
-            showHelp()
-            os.Exit(1)
-        }
+	switch args[0] {
+	case "play":
+		// Not enough args for play, show help and quit
+		if len(args) < 2 {
+			showHelp()
+			os.Exit(1)
+		}
 
-        // Grab file
-        fn := args[1]
-        reader, err := os.Open(fn)
-        if err != nil {
-            fmt.Printf("Could not open file %s\n", fn)
-            showHelp()
-            os.Exit(1)
-        }
+		// Grab file
+		fn := args[1]
+		reader, err := os.Open(fn)
+		if err != nil {
+			fmt.Printf("Could not open file %s\n", fn)
+			showHelp()
+			os.Exit(1)
+		}
 
-        // Play file
-        song := getSong(reader)
-        play(song)
-        os.Exit(0)
+		// Play file
+		song := getSong(reader)
+		play(song)
+		os.Exit(0)
 
-    case "create":
-        song := beats.Song{Tempo: 100}
+	case "create":
+		song := beats.Song{Tempo: 100}
 
-        if len(args) > 1 {
-            // Grab file
-            fn := args[1]
-            reader, err := os.Open(fn)
-            if err != nil {
-                fmt.Printf("Could not open file %s\n", fn)
-                showHelp()
-                os.Exit(1)
-            }
+		if len(args) > 1 {
+			// Grab file
+			fn := args[1]
+			reader, err := os.Open(fn)
+			if err != nil {
+				fmt.Printf("Could not open file %s\n", fn)
+				showHelp()
+				os.Exit(1)
+			}
 
-            // Load song from file
-            song = getSong(reader)
-        }
+			// Load song from file
+			song = getSong(reader)
+		}
 
-        create(song)
-        os.Exit(0)
+		create(song)
+		os.Exit(0)
 
-    case "help", "-h", "--help":
-        showHelp()
-        os.Exit(0)
-    }
+	case "help", "-h", "--help":
+		showHelp()
+		os.Exit(0)
+	}
 
-    // No valid command given
-    showHelp()
-    os.Exit(1)
+	// No valid command given
+	showHelp()
+	os.Exit(1)
 }
 
 func showHelp() {
-    fmt.Printf(
-        `usage: %s <command> [<args>]
+	fmt.Printf(
+		`usage: %s <command> [<args>]
 
 command is one of:
     play <filename>        Play a song
@@ -139,35 +139,35 @@ Commands:
 }
 
 func create(song beats.Song) {
-    beats.Create(song)
+	beats.Create(song)
 }
 
 func play(song beats.Song) {
-    fmt.Printf("Name: %s\n", song.Name)
-    fmt.Printf("Tempo: %d bpm\n", song.Tempo)
+	fmt.Printf("Name: %s\n", song.Name)
+	fmt.Printf("Tempo: %d bpm\n", song.Tempo)
 
-    clock := clock.New()
-    out := make(chan beats.Step)
+	clock := clock.New()
+	out := make(chan beats.Step)
 
-    go song.Play(clock, out)
+	go song.Play(clock, out)
 
-    for s := range out {
-        fmt.Printf("%d: %s\n", s.Tick, s.Beat)
-    }
+	for s := range out {
+		fmt.Printf("%d: %s\n", s.Tick, s.Beat)
+	}
 }
 
 func getSong(reader io.Reader) beats.Song {
-    song, err := beats.Parse(reader)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return *song
+	song, err := beats.Parse(reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return *song
 }
 
 func getDefaultSong() beats.Song {
-    song, err := beats.Default()
-    if err != nil {
-        log.Fatal(err)
-    }
-    return *song
+	song, err := beats.Default()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return *song
 }
