@@ -110,6 +110,15 @@ Instruments are changed via the arrow keys. Up and left decrements the instrumen
 
 > Note: This UI was only tested in Windows Command Prompt using default colors. The terminal window was larger than 80 columns by 24 rows. Attempting create mode on other systems would require testing and handling degradation due to window size changes would also be advised.
 
+Each instrument has its own values for entries in the UI based on the available states.
+
+* Cymbal has values of `c`rash and `r`ide
+* Hi-hat is `o`pen or `c`losed
+* Handclap/tambourine is `h`andclap and `t`ambourine
+* Rimshot/cowbell uses `r`imshot and `c`owbell
+* All three toms and accent use `□` to mark the note
+* Snare and bass drums use values for drum `1` and drum `2`
+
 # Architecture
 
 ## Song and Beat Formats
